@@ -23,8 +23,10 @@ Este projeto foi desenvolvido como parte do meu portfólio para consolidar conhe
 ### 🎯 Objetivos do Projeto
 
 - Automatizar a organização de partidas recreativas
-- Garantir equilíbrio técnico entre equipes através de algoritmos inteligentes
-- Facilitar a gestão financeira do grupo
+- Sortear 4 times equilibrados através de algoritmos inteligentes
+- Gerenciar ciclos mensais com sistema de mensalidades
+- Controlar presença com prioridade para mensalistas
+- Facilitar a gestão financeira do clube (caixa para confraternizações)
 - Consolidar conhecimentos em desenvolvimento backend com NestJS
 - Aplicar boas práticas de arquitetura e clean code
 
@@ -33,60 +35,86 @@ Este projeto foi desenvolvido como parte do meu portfólio para consolidar conhe
 ## 🚀 Tecnologias Utilizadas
 
 ### Core
-- **[NestJS](https://nestjs.com/)** - Framework progressivo para Node.js
-- **[TypeScript](https://www.typescriptlang.org/)** - Superset JavaScript com tipagem estática
-- **[MongoDB](https://www.mongodb.com/)** - Banco de dados NoSQL
-- **[Mongoose](https://mongoosejs.com/)** - ODM para MongoDB
+- **[NestJS](https://nestjs.com/)** 11.0.1 - Framework progressivo para Node.js
+- **[TypeScript](https://www.typescriptlang.org/)** 5.7.3 - Superset JavaScript com tipagem estática
+- **[MongoDB Atlas](https://www.mongodb.com/atlas)** - Banco de dados NoSQL em cloud
+- **[Mongoose](https://mongoosejs.com/)** 8.20.1 - ODM para MongoDB
 
 ### Autenticação & Segurança
-- **[Firebase Admin](https://firebase.google.com/docs/admin/setup)** - Autenticação e validação de tokens
-- **[Class Validator](https://github.com/typestack/class-validator)** - Validação de dados
-- **[Class Transformer](https://github.com/typestack/class-transformer)** - Transformação de objetos
+- **[Firebase Admin](https://firebase.google.com/docs/admin/setup)** 13.6.0 - Autenticação e validação de tokens JWT
+- **[Class Validator](https://github.com/typestack/class-validator)** 0.14.3 - Validação de dados
+- **[Class Transformer](https://github.com/typestack/class-transformer)** 0.5.1 - Transformação de objetos
 
 ### Qualidade de Código
 - **[ESLint](https://eslint.org/)** - Linting e padronização de código
 - **[Prettier](https://prettier.io/)** - Formatação automática
-- **[Jest](https://jestjs.io/)** - Framework de testes
+- **[Jest](https://jestjs.io/)** 30.0.0 - Framework de testes
 
 ---
 
 ## 📦 Funcionalidades
 
-### 👥 Gestão de Membros
-- Cadastro completo de jogadores (nome, apelido, foto, contato)
-- Sistema de perfil técnico:
-  - Posição (Goleiro ou Jogador de Linha)
-  - Nível de habilidade (1-5 estrelas)
-  - Status (Ativo, Lesionado, Afastado)
+### 👥 Gestão de Usuários
+- Cadastro de usuários autenticados via Firebase
+- Sistema de perfis (Admin e Usuário)
+- Controle de status ativo/inativo
+- Integração com Firebase Authentication
 
-### 📅 Gestão de Partidas
-- Agendamento de partidas com data, hora e local
+### 🎮 Gestão de Jogadores
+- Cadastro completo de jogadores (nome, apelido, foto)
+- Sistema de classificação por nível (1-5 estrelas)
+- Diferenciação de posição (Goleiro ou Jogador de Linha)
+- Status de atividade (Ativo/Inativo)
+- Filtros por posição e nível
+
+### 📅 Gestão de Ciclos Mensais
+- Criação de ciclos com período definido (mês)
+- Limite de 20 mensalistas (padrão, configurável)
+- Cálculo automático de mensalidade (valor campo ÷ quantidade jogadores)
+- Controle de status (Aberto → Fechado → Encerrado)
+- Lista de mensalistas com validação de vagas
+- **Virtuals calculados:**
+  - `completo`: Indica se ciclo atingiu limite de mensalistas
+  - `valorMensalidade`: Valor individual calculado
+  - `vagasRestantes`: Vagas disponíveis
+
+### ⚽ Gestão de Partidas
+- Agendamento de partidas (terças-feiras)
 - Sistema de confirmação de presença
-- Lista de espera automática para excedentes
-- Registo de resultados e placares
+- Diferenciação de pagamento (Mensalista ou Avulso)
+- Prioridade para mensalistas até prazo limite (18h)
+- Abertura para avulsos após prazo
+- Controle de goleiros (não entram no sorteio)
+- Status da partida (Pendente → Lista Aberta → Times Sorteados → Concluída/Cancelada)
+- **Virtuals calculados:**
+  - `quantidadeConfirmados`: Total de confirmados
+  - `vagasRestantes`: Vagas disponíveis
+  - `partidaCheia`: Indica se atingiu limite
 
-### ⚖️ Algoritmo de Sorteio (Team Balancer)
-- Distribuição automática de goleiros
-- Balanceamento baseado em níveis de habilidade
-- Equalização da "força" das equipes
-- Geração automática de times equilibrados
-
-### 📊 Histórico e Estatísticas
-- Registo de resultados de partidas
-- Estatísticas de desempenho (em desenvolvimento)
-- Histórico de jogos
+### ⚖️ Sistema de Sorteio de Times
+- Geração automática de 4 times equilibrados
+- Distribuição baseada em níveis de habilidade (1-5 estrelas)
+- Ajuste manual de nível por partida (nivelAjustado)
+- Goleiros ficam de fora do sorteio
+- Times identificados por cores (Vermelho, Azul, Verde, Amarelo)
+- Equalização da força total das equipes
 
 ### 💰 Gestão Financeira
-- Controlo de mensalidades
-- Registo de pagamentos avulsos
-- Gestão de despesas (aluguer, equipamentos, etc.)
-- Visão geral do caixa do grupo
+- Registro de entradas (mensalidades e diárias)
+- Registro de saídas (aluguel campo, equipamentos, confraternização)
+- Categorização de transações
+- Rastreabilidade (vínculo com ciclo, partida, jogador)
+- Cálculo dinâmico de saldo do clube
+- Relatórios por período
+- Método de pagamento (PIX, Dinheiro, Cartão, Transferência)
 
 ### 🔐 Autenticação e Autorização
 - Integração com Firebase Authentication
-- Sistema de perfis (Admin e User)
-- Validação de tokens JWT
-- Proteção de rotas por roles
+- Middleware de validação de tokens JWT
+- Decorator customizado `@FirebaseAuth()` para injeção de usuário
+- Guards de autorização por roles (Admin)
+- Proteção de rotas sensíveis
+- CORS configurado para produção (Firebase Hosting)
 
 ---
 
@@ -96,18 +124,137 @@ O projeto segue a arquitetura modular do NestJS, com separação clara de respon
 
 ```
 src/
-├── auth/                 # Módulo de autenticação
-├── users/                # Gestão de utilizadores
-├── players/              # Gestão de jogadores
-├── matches/              # Gestão de partidas
-├── finances/             # Gestão financeira
-├── team-balancer/        # Algoritmo de sorteio
-├── common/               # Recursos compartilhados
-│   ├── guards/           # Guards de autenticação/autorização
-│   ├── decorators/       # Decorators customizados
-│   ├── filters/          # Exception filters
-│   └── interceptors/     # Interceptors
-└── config/               # Configurações da aplicação
+├── firebase/                  # Módulo de autenticação Firebase
+│   ├── decorators/
+│   │   └── firebaseAuth.decorator.ts
+│   ├── firebase.provider.ts
+│   ├── firebaseAuth.middleware.ts
+│   └── serviceAccountKey.json
+├── usuario/                   # Gestão de usuários
+│   └── schemas/
+│       └── usuario.schema.ts
+├── jogador/                   # Gestão de jogadores
+│   └── schemas/
+│       └── jogador.schema.ts
+├── ciclo/                     # Gestão de ciclos mensais
+│   └── schemas/
+│       └── ciclo.schema.ts
+├── partida/                   # Gestão de partidas (a implementar)
+│   └── schemas/
+│       └── partida.schema.ts
+├── financeiro/                # Gestão financeira (a implementar)
+│   └── schemas/
+│       └── financeiro.schema.ts
+├── common/                    # Recursos compartilhados (a implementar)
+│   ├── guards/
+│   ├── decorators/
+│   ├── filters/
+│   └── interceptors/
+├── app.module.ts
+├── app.controller.ts
+├── app.service.ts
+└── main.ts
+```
+
+---
+
+## 📊 Modelagem de Dados (Schemas)
+
+### Usuario Schema
+```typescript
+{
+  tipo: 'usuario' | 'admin',
+  nome: string,
+  email: string (unique),
+  foto?: string,
+  status_ativo: boolean
+}
+```
+
+### Jogador Schema
+```typescript
+{
+  nome: string,
+  apelido?: string,
+  foto?: string,
+  posicao: 'jogador' | 'goleiro',
+  nivel: number (1-5),
+  status: 'ativo' | 'inativo',
+  criado_em: Date,
+  atualizado_em: Date
+}
+```
+
+### Ciclo Schema
+```typescript
+{
+  nome: string,
+  dataInicio: Date,
+  dataFim: Date,
+  quantidadePartidas: number,
+  valorCampo: number,
+  quantidadeJogadores: number (default: 20),
+  status: 'aberto' | 'fechado' | 'encerrado',
+  mensalistas: ObjectId[] (ref: Jogador),
+  criado_em: Date,
+  atualizado_em: Date,
+  // Virtuals
+  completo: boolean,
+  valorMensalidade: number,
+  vagasRestantes: number
+}
+```
+
+### Partida Schema
+```typescript
+{
+  data: Date,
+  local: string,
+  cicloId: ObjectId (ref: Ciclo),
+  status: 'pendente' | 'lista_aberta' | 'times_sorteados' | 'concluida' | 'cancelada',
+  maxJogadores: number (default: 20),
+  goleiros: ObjectId[] (ref: Jogador),
+  listaPresenca: [{
+    jogadorId: ObjectId,
+    statusConfirmacao: 'pendente' | 'confirmado' | 'recusado',
+    confirmedoEm?: Date,
+    tipoPagamento: 'mensalista' | 'avulso',
+    nivelAjustado?: number (1-5)
+  }],
+  listaAbertaEm?: Date,
+  prazoLimitePrioridade?: Date,
+  timesSorteados?: [{
+    nome: string,
+    cor: string,
+    jogadores: ObjectId[]
+  }],
+  observacoes?: string,
+  criadoPor: ObjectId (ref: Usuario),
+  criado_em: Date,
+  atualizado_em: Date,
+  // Virtuals
+  quantidadeConfirmados: number,
+  vagasRestantes: number,
+  partidaCheia: boolean
+}
+```
+
+### Financeiro Schema
+```typescript
+{
+  tipo: 'entrada' | 'saida',
+  categoria: 'mensalidade' | 'diaria' | 'aluguel_campo' | 'equipamento' | 'confraternizacao' | 'outro',
+  valor: number,
+  descricao: string,
+  data: Date,
+  metodoPagamento?: 'pix' | 'dinheiro' | 'cartao' | 'transferencia',
+  cicloId?: ObjectId (ref: Ciclo),
+  partidaId?: ObjectId (ref: Partida),
+  jogadorId?: ObjectId (ref: Jogador),
+  criadoPor: ObjectId (ref: Usuario),
+  criado_em: Date,
+  atualizado_em: Date
+}
 ```
 
 ---
@@ -118,8 +265,8 @@ src/
 
 - Node.js (versão 18 ou superior)
 - npm ou yarn
-- MongoDB (local ou Atlas)
-- Conta Firebase (para autenticação)
+- MongoDB Atlas (ou local)
+- Projeto Firebase com Authentication habilitado
 
 ### Instalação
 
@@ -142,19 +289,19 @@ cp .env.example .env
 4. Edite o arquivo `.env` com suas configurações:
 ```env
 # MongoDB
-MONGODB_URI=mongodb://localhost:27017/badernafc
-
-# Firebase
-FIREBASE_PROJECT_ID=seu-projeto-id
-FIREBASE_PRIVATE_KEY=sua-chave-privada
-FIREBASE_CLIENT_EMAIL=seu-client-email
+MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/database?retryWrites=true&w=majority
 
 # Application
 PORT=3000
 NODE_ENV=development
 ```
 
-5. Inicie a aplicação:
+5. Configure o Firebase:
+   - Baixe o `serviceAccountKey.json` do Firebase Console
+   - Coloque em `src/firebase/serviceAccountKey.json`
+   - **IMPORTANTE:** Arquivo já está no `.gitignore` (não commitar!)
+
+6. Inicie a aplicação:
 ```bash
 # Modo desenvolvimento
 npm run start:dev
@@ -163,6 +310,8 @@ npm run start:dev
 npm run build
 npm run start:prod
 ```
+
+A API estará disponível em `http://localhost:3000`
 
 ---
 
@@ -200,34 +349,155 @@ npm run lint           # Executa o ESLint
 ## 🗺️ Roadmap
 
 ### ✅ Fase 1 - Setup Base (Concluído)
-- [x] Configuração inicial do projeto
-- [x] Estrutura de módulos
-- [x] Integração com MongoDB
-- [x] Configuração Firebase Auth
+- [x] Configuração inicial do projeto NestJS
+- [x] Integração com MongoDB Atlas
+- [x] Configuração Firebase Authentication
+- [x] Middleware de autenticação JWT
+- [x] Estrutura modular de pastas
+- [x] CORS configurado
+- [x] ValidationPipe global
 
-### 🚧 Fase 2 - Funcionalidades Core (Em Desenvolvimento)
-- [ ] CRUD completo de jogadores
-- [ ] Sistema de gestão de partidas
-- [ ] Algoritmo de balanceamento de times
-- [ ] Sistema de presença
+### ✅ Fase 2 - Schemas (Concluído)
+- [x] Schema Usuario
+- [x] Schema Jogador
+- [x] Schema Ciclo com virtuals
+- [x] Schema Partida (Issue #2)
+- [x] Schema Financeiro (Issue #2)
 
-### 📋 Fase 3 - Gestão Financeira
-- [ ] Controlo de mensalidades
-- [ ] Gestão de despesas
-- [ ] Relatórios financeiros
-- [ ] Dashboard de caixa
+### 🚧 Fase 3 - CRUDs Completos (Issue #3 - Em Desenvolvimento)
+- [ ] DTOs de validação (CreateDto, UpdateDto)
+- [ ] Services com lógica de negócio
+- [ ] Controllers com endpoints RESTful
+- [ ] Guards de autorização (AdminGuard)
+- [ ] Testes com Postman/Insomnia
 
-### 🎯 Fase 4 - Estatísticas e Gamificação
-- [ ] Sistema de estatísticas individuais
-- [ ] Ranking de jogadores
-- [ ] Sistema de conquistas
-- [ ] Histórico detalhado
+#### Módulos a Implementar:
+- [ ] **UsuarioModule** - CRUD + buscar por email
+- [ ] **JogadorModule** - CRUD + filtros (ativos, goleiros, por posição)
+- [ ] **CicloModule** - CRUD + gerenciar mensalistas + cálculos
+- [ ] **PartidaModule** - CRUD + confirmações + sortear times
+- [ ] **FinanceiroModule** - CRUD + calcular saldo + relatórios
+
+### 📋 Fase 4 - Algoritmo de Sorteio Avançado
+- [ ] Algoritmo de balanceamento por nível
+- [ ] Distribuição equilibrada de habilidades
+- [ ] Ajustes manuais de times
+- [ ] Histórico de times sorteados
+
+### 💼 Fase 5 - Gestão Financeira Avançada
+- [ ] Dashboard financeiro
+- [ ] Relatórios por período
+- [ ] Gráficos de entrada/saída
+- [ ] Controle de inadimplência
+- [ ] Export de relatórios (PDF/Excel)
+
+### 🔔 Fase 6 - Notificações
+- [ ] Notificações por email
+- [ ] Lembretes de partidas
+- [ ] Avisos de abertura de lista
+- [ ] Notificações de pagamento
+
+### 🎯 Fase 7 - Testes e Documentação
+- [ ] Testes unitários (Services)
+- [ ] Testes e2e (Endpoints)
+- [ ] Documentação Swagger/OpenAPI
+- [ ] Cobertura de testes > 80%
 
 ### 🔮 Futuro
-- [ ] Notificações push
-- [ ] Sistema de chat
-- [ ] Integração com calendários
+- [ ] Sistema de conquistas/badges
+- [ ] Ranking de jogadores
+- [ ] Estatísticas detalhadas
+- [ ] Integração com calendários (Google Calendar)
 - [ ] App mobile (React Native)
+- [ ] Sistema de chat em tempo real
+
+---
+
+## 🌐 Endpoints (Planejados)
+
+### Health Check
+```
+GET /health  # Verificar status da API
+```
+
+### Usuários
+```
+GET    /usuarios           # Listar todos
+GET    /usuarios/:id       # Buscar por ID
+POST   /usuarios           # Criar (Admin)
+PUT    /usuarios/:id       # Atualizar
+DELETE /usuarios/:id       # Deletar (Admin)
+```
+
+### Jogadores
+```
+GET    /jogadores                 # Listar todos
+GET    /jogadores/ativos          # Listar ativos
+GET    /jogadores/goleiros        # Listar goleiros
+GET    /jogadores/:id             # Buscar por ID
+POST   /jogadores                 # Criar (Admin)
+PUT    /jogadores/:id             # Atualizar (Admin)
+DELETE /jogadores/:id             # Deletar (Admin)
+```
+
+### Ciclos
+```
+GET    /ciclos                    # Listar todos
+GET    /ciclos/:id                # Buscar por ID
+POST   /ciclos                    # Criar (Admin)
+POST   /ciclos/:id/mensalistas    # Adicionar mensalista
+PUT    /ciclos/:id                # Atualizar (Admin)
+DELETE /ciclos/:id                # Deletar (Admin)
+```
+
+### Partidas
+```
+GET    /partidas                          # Listar todas
+GET    /partidas/:id                      # Buscar por ID
+POST   /partidas                          # Criar (Admin)
+POST   /partidas/:id/confirmar-presenca   # Confirmar presença
+POST   /partidas/:id/sortear-times        # Sortear times (Admin)
+PUT    /partidas/:id                      # Atualizar (Admin)
+DELETE /partidas/:id                      # Deletar (Admin)
+```
+
+### Financeiro
+```
+GET    /financeiro           # Listar transações
+GET    /financeiro/saldo     # Calcular saldo atual
+POST   /financeiro           # Criar transação (Admin)
+PUT    /financeiro/:id       # Atualizar (Admin)
+DELETE /financeiro/:id       # Deletar (Admin)
+```
+
+---
+
+## 🔐 Autenticação
+
+A API utiliza Firebase Authentication com tokens JWT. Todas as rotas (exceto `/health`) requerem autenticação.
+
+### Headers Obrigatórios
+```
+Authorization: Bearer <firebase_token>
+```
+
+### Decorator Customizado
+```typescript
+@FirebaseAuth()
+getUser(@FirebaseAuth() user: any) {
+  // user contém dados do token Firebase
+  console.log(user.uid, user.email);
+}
+```
+
+### Proteção por Role
+```typescript
+@UseGuards(AdminGuard)
+@Post()
+create() {
+  // Apenas admins podem acessar
+}
+```
 
 ---
 
@@ -237,7 +507,7 @@ Este é um projeto pessoal de aprendizado, mas contribuições, sugestões e fee
 
 1. Faça um Fork do projeto
 2. Crie uma branch para sua feature (`git checkout -b feature/MinhaFeature`)
-3. Commit suas mudanças (`git commit -m 'Adiciona MinhaFeature'`)
+3. Commit suas mudanças (`git commit -m 'feat: adiciona MinhaFeature'`)
 4. Push para a branch (`git push origin feature/MinhaFeature`)
 5. Abra um Pull Request
 
@@ -262,14 +532,15 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 Este projeto me permitiu consolidar conhecimentos em:
 
-- Arquitetura de aplicações backend com NestJS
-- Design patterns (Dependency Injection, Repository Pattern)
-- Integração com serviços externos (Firebase, MongoDB)
-- Autenticação e autorização com JWT
-- Validação e transformação de dados
-- Testes automatizados
-- Boas práticas de desenvolvimento (SOLID, Clean Code)
-- Documentação de APIs
+- **Arquitetura NestJS:** Módulos, Providers, Controllers, Middleware
+- **Mongoose & MongoDB:** Schemas, Virtuals, Validações, Referências
+- **Firebase Admin SDK:** Autenticação JWT, Middleware customizado
+- **TypeScript Avançado:** Decorators, Types, Interfaces
+- **Validação de Dados:** Class-validator, DTOs, ValidationPipe
+- **Modelagem de Dados:** NoSQL, Relacionamentos, Sub-documentos
+- **Design Patterns:** Dependency Injection, Repository Pattern
+- **Boas Práticas:** SOLID, Clean Code, Nomenclatura em português
+- **Git Flow:** Issues, Branches, Commits semânticos
 
 ---
 
