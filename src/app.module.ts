@@ -4,6 +4,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FirebaseAuthMiddleware } from './firebase/firebaseAuth.middleware';
+import { UsuariosModule } from './usuarios/usuarios.module';
+import { CicloMensalModule } from './ciclo-mensal/ciclo-mensal.module';
+import { JogadoresModule } from './jogadores/jogadores.module';
+import { PartidasModule } from './partidas/partidas.module';
 
 @Module({
   imports: [
@@ -21,6 +25,11 @@ import { FirebaseAuthMiddleware } from './firebase/firebaseAuth.middleware';
       }),
       inject: [ConfigService],
     }),
+
+    UsuariosModule,
+    CicloMensalModule,
+    JogadoresModule,
+    PartidasModule,
   ],
   controllers: [AppController],
   providers: [AppService],

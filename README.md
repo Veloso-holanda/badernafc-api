@@ -77,9 +77,9 @@ Este projeto foi desenvolvido como parte do meu portfólio para consolidar conhe
 - Histórico de jogos
 
 ### 💰 Gestão Financeira
-- Controlo de mensalidades
+- Controle de mensalidades
 - Registo de pagamentos avulsos
-- Gestão de despesas (aluguer, equipamentos, etc.)
+- Gestão de despesas (aluguel, equipamentos, etc.)
 - Visão geral do caixa do grupo
 
 ### 🔐 Autenticação e Autorização
