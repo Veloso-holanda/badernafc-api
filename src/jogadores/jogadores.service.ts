@@ -41,7 +41,7 @@ export class JogadoresService {
       .populate('usuario')
       .exec();
     if (!jogador) {
-      throw new NotFoundException('Jogador nao encontrado');
+      throw new NotFoundException('Jogador não encontrado');
     }
     return jogador;
   }
@@ -55,7 +55,7 @@ export class JogadoresService {
       .populate('usuario')
       .exec();
     if (!jogador) {
-      throw new NotFoundException('Jogador nao encontrado');
+      throw new NotFoundException('Jogador não encontrado');
     }
     return jogador;
   }
@@ -63,22 +63,26 @@ export class JogadoresService {
   async remover(id: string): Promise<Jogador> {
     const jogador = await this.jogadorModel.findByIdAndDelete(id).exec();
     if (!jogador) {
-      throw new NotFoundException('Jogador nao encontrado');
+      throw new NotFoundException('Jogador não encontrado');
     }
     return jogador;
   }
 
-  async vincular(firebaseUid: string, codigoVincular: string): Promise<Jogador> {
+  async vincular(
+    firebaseUid: string,
+    codigoVincular: string,
+  ): Promise<Jogador> {
     const jogador = await this.jogadorModel.findOne({ codigoVincular }).exec();
     if (!jogador) {
-      throw new NotFoundException('Codigo de vinculo invalido');
+      throw new NotFoundException('Código de vínculo inválido');
     }
 
     if (jogador.vinculado) {
-      throw new ConflictException('Jogador ja vinculado a outro usuario');
+      throw new ConflictException('Jogador já vinculado a outro usuário');
     }
 
-    const usuario = await this.usuariosService.buscarPorFirebaseUid(firebaseUid);
+    const usuario =
+      await this.usuariosService.buscarPorFirebaseUid(firebaseUid);
 
     jogador.usuario = usuario['_id'];
     jogador.email = usuario.email;

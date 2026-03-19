@@ -5,8 +5,11 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Partida, PartidaDocument, PartidaStatus } from './schemas/partida.schema';
-import { CriarPartidaDto } from './dto/criar-partida.dto';
+import {
+  Partida,
+  PartidaDocument,
+  PartidaStatus,
+} from './schemas/partida.schema';
 import { CicloMensalService } from '../ciclo-mensal/ciclo-mensal.service';
 import { JogadoresService } from '../jogadores/jogadores.service';
 
@@ -17,32 +20,6 @@ export class PartidasService {
     private readonly cicloMensalService: CicloMensalService,
     private readonly jogadoresService: JogadoresService,
   ) {}
-
-  async criar(criarPartidaDto: CriarPartidaDto): Promise<Partida> {
-    const ciclo = await this.cicloMensalService.buscarPorId(
-      criarPartidaDto.cicloMensal,
-    );
-
-    const proximaData = this.calcularProximaDataPartida(
-      ciclo.diaSemana,
-      ciclo['dataInicial'],
-      ciclo['dataFinal'],
-    );
-
-    if (!proximaData) {
-      throw new BadRequestException(
-        'Nao ha mais datas disponiveis neste ciclo',
-      );
-    }
-
-    const partida = new this.partidaModel({
-      cicloMensal: criarPartidaDto.cicloMensal,
-      data: proximaData,
-      horario: ciclo.horario,
-    });
-
-    return partida.save();
-  }
 
   async buscarTodos(): Promise<Partida[]> {
     return this.partidaModel
@@ -61,14 +38,14 @@ export class PartidasService {
       .populate('listaEspera')
       .exec();
     if (!partida) {
-      throw new NotFoundException('Partida nao encontrada');
+      throw new NotFoundException('Partida não encontrada');
     }
     return partida;
   }
 
   async buscarPorCiclo(cicloMensalId: string): Promise<Partida[]> {
     return this.partidaModel
-      .find({ cicloMensal: cicloMensalId })
+      .find({ cicloMensal: new Types.ObjectId(cicloMensalId) })
       .populate('jogadores.jogador')
       .populate('listaEspera')
       .exec();
@@ -79,24 +56,49 @@ export class PartidasService {
     jogadorId: string,
   ): Promise<Partida> {
     const partida = await this.buscarPorId(partidaId);
+    const agora = new Date();
 
-    if (partida.status !== PartidaStatus.ABERTA) {
-      throw new BadRequestException('Partida nao esta aberta para confirmacao');
+    // Verifica se a lista ja esta aberta
+    if (agora < new Date(partida.aberturaLista)) {
+      throw new BadRequestException(
+        'Lista ainda não está aberta para confirmação',
+      );
+    }
+
+    // Verifica se a lista ja fechou
+    if (agora >= new Date(partida.fechamentoLista)) {
+      throw new BadRequestException('Lista já está fechada');
+    }
+
+    if (
+      partida.status === PartidaStatus.FECHADA ||
+      partida.status === PartidaStatus.SORTEADA ||
+      partida.status === PartidaStatus.FINALIZADA
+    ) {
+      throw new BadRequestException('Partida não está aberta para confirmação');
+    }
+
+    // Se a partida ainda esta aguardando mas ja passou da abertura, muda pra aberta
+    if (partida.status === PartidaStatus.AGUARDANDO) {
+      await this.partidaModel.findByIdAndUpdate(partidaId, {
+        status: PartidaStatus.ABERTA,
+      });
     }
 
     const jaConfirmado = partida.jogadores.some(
-      (j) => j.jogador['_id']?.toString() === jogadorId ||
-             j.jogador?.toString() === jogadorId,
+      (j) =>
+        j.jogador['_id']?.toString() === jogadorId ||
+        j.jogador?.toString() === jogadorId,
     );
     if (jaConfirmado) {
-      throw new BadRequestException('Jogador ja confirmado nesta partida');
+      throw new BadRequestException('Jogador já confirmado nesta partida');
     }
 
     const jaEmEspera = partida.listaEspera.some(
       (id) => id.toString() === jogadorId,
     );
     if (jaEmEspera) {
-      throw new BadRequestException('Jogador ja esta na lista de espera');
+      throw new BadRequestException('Jogador já está na lista de espera');
     }
 
     const jogador = await this.jogadoresService.buscarPorId(jogadorId);
@@ -109,21 +111,18 @@ export class PartidasService {
       (id) => id.toString() === jogadorId,
     );
 
-    const agora = new Date();
-    const horaAtual = agora.getHours();
-    const ehMesmoDia =
-      agora.toDateString() === new Date(partida.data).toDateString();
-
     // Antes das 18h no dia da partida, so mensalistas podem confirmar
-    if (ehMesmoDia && horaAtual < 18 && !ehMensalista) {
-      // Diarista vai pra lista de espera
+    // Diaristas vao pra lista de espera
+    const ehDiaPartida =
+      agora.toDateString() === new Date(partida.data).toDateString();
+    if (ehDiaPartida && agora.getHours() < 18 && !ehMensalista) {
       await this.partidaModel.findByIdAndUpdate(partidaId, {
         $push: { listaEspera: new Types.ObjectId(jogadorId) },
       });
       return this.buscarPorId(partidaId);
     }
 
-    // Lista cheia: diarista vai pra espera, mensalista tambem se estiver cheia
+    // Lista cheia: diarista vai pra espera, mensalista erro
     if (partida.jogadores.length >= partida.limiteJogadores) {
       if (!ehMensalista) {
         await this.partidaModel.findByIdAndUpdate(partidaId, {
@@ -162,7 +161,7 @@ export class PartidasService {
       (id) => id.toString() === jogadorId,
     );
     if (!naEspera) {
-      throw new BadRequestException('Jogador nao esta na lista de espera');
+      throw new BadRequestException('Jogador não está na lista de espera');
     }
 
     const jogador = await this.jogadoresService.buscarPorId(jogadorId);
@@ -182,10 +181,7 @@ export class PartidasService {
     return this.buscarPorId(partidaId);
   }
 
-  async removerJogador(
-    partidaId: string,
-    jogadorId: string,
-  ): Promise<Partida> {
+  async removerJogador(partidaId: string, jogadorId: string): Promise<Partida> {
     await this.partidaModel.findByIdAndUpdate(partidaId, {
       $pull: {
         jogadores: { jogador: new Types.ObjectId(jogadorId) },
@@ -210,7 +206,7 @@ export class PartidasService {
     );
 
     if (!resultado) {
-      throw new NotFoundException('Jogador nao encontrado nesta partida');
+      throw new NotFoundException('Jogador não encontrado nesta partida');
     }
 
     return this.buscarPorId(partidaId);
@@ -225,35 +221,50 @@ export class PartidasService {
       )
       .exec();
     if (!partida) {
-      throw new NotFoundException('Partida nao encontrada');
+      throw new NotFoundException('Partida não encontrada');
     }
+    return this.buscarPorId(partidaId);
+  }
+
+  async marcarPagamentoDiarista(
+    partidaId: string,
+    jogadorId: string,
+    pago: boolean,
+  ): Promise<Partida> {
+    const partida = await this.buscarPorId(partidaId);
+
+    const jogadorNaPartida = partida.jogadores.find(
+      (j) =>
+        j.jogador['_id']?.toString() === jogadorId ||
+        j.jogador?.toString() === jogadorId,
+    );
+
+    if (!jogadorNaPartida) {
+      throw new NotFoundException('Jogador não encontrado nesta partida');
+    }
+
+    if (jogadorNaPartida.mensalista) {
+      throw new BadRequestException(
+        'Jogador é mensalista, pagamento é via ciclo mensal',
+      );
+    }
+
+    await this.partidaModel.findOneAndUpdate(
+      {
+        _id: partidaId,
+        'jogadores.jogador': new Types.ObjectId(jogadorId),
+      },
+      { $set: { 'jogadores.$.pago': pago } },
+    );
+
     return this.buscarPorId(partidaId);
   }
 
   async remover(id: string): Promise<Partida> {
     const partida = await this.partidaModel.findByIdAndDelete(id).exec();
     if (!partida) {
-      throw new NotFoundException('Partida nao encontrada');
+      throw new NotFoundException('Partida não encontrada');
     }
     return partida;
-  }
-
-  private calcularProximaDataPartida(
-    diaSemana: number,
-    dataInicial: Date,
-    dataFinal: Date,
-  ): Date | null {
-    const hoje = new Date();
-    const inicio = hoje > dataInicial ? hoje : new Date(dataInicial);
-    const atual = new Date(inicio);
-
-    while (atual <= dataFinal) {
-      if (atual.getDay() === diaSemana && atual >= hoje) {
-        return atual;
-      }
-      atual.setDate(atual.getDate() + 1);
-    }
-
-    return null;
   }
 }

@@ -8,6 +8,8 @@ import { UsuariosModule } from './usuarios/usuarios.module';
 import { CicloMensalModule } from './ciclo-mensal/ciclo-mensal.module';
 import { JogadoresModule } from './jogadores/jogadores.module';
 import { PartidasModule } from './partidas/partidas.module';
+import { FinanceiroModule } from './financeiro/financeiro.module';
+import { ConfiguracoesGeraisModule } from './configuracoes-gerais/configuracoes-gerais.module';
 
 @Module({
   imports: [
@@ -16,7 +18,7 @@ import { PartidasModule } from './partidas/partidas.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    
+
     // Conexão com MongoDB
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
@@ -26,10 +28,12 @@ import { PartidasModule } from './partidas/partidas.module';
       inject: [ConfigService],
     }),
 
+    ConfiguracoesGeraisModule,
     UsuariosModule,
     CicloMensalModule,
     JogadoresModule,
     PartidasModule,
+    FinanceiroModule,
   ],
   controllers: [AppController],
   providers: [AppService],

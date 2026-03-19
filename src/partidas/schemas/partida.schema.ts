@@ -4,6 +4,7 @@ import { HydratedDocument, Types } from 'mongoose';
 export type PartidaDocument = HydratedDocument<Partida>;
 
 export enum PartidaStatus {
+  AGUARDANDO = 'aguardando',
   ABERTA = 'aberta',
   FECHADA = 'fechada',
   SORTEADA = 'sorteada',
@@ -23,6 +24,9 @@ export class JogadorPartida {
 
   @Prop({ default: null })
   confirmadoEm: Date;
+
+  @Prop({ required: true, default: false })
+  pago: boolean;
 }
 
 export const JogadorPartidaSchema =
@@ -42,9 +46,15 @@ export class Partida {
   @Prop({
     type: String,
     enum: PartidaStatus,
-    default: PartidaStatus.ABERTA,
+    default: PartidaStatus.AGUARDANDO,
   })
   status: PartidaStatus;
+
+  @Prop({ required: true })
+  aberturaLista: Date;
+
+  @Prop({ required: true })
+  fechamentoLista: Date;
 
   @Prop({ type: [JogadorPartidaSchema], default: [] })
   jogadores: JogadorPartida[];

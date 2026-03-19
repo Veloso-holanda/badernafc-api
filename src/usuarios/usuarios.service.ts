@@ -15,10 +15,13 @@ export class UsuariosService {
     @InjectModel(Usuario.name) private usuarioModel: Model<UsuarioDocument>,
   ) {}
 
-  async criar(firebaseUid: string, criarUsuarioDto: CriarUsuarioDto): Promise<Usuario> {
+  async criar(
+    firebaseUid: string,
+    criarUsuarioDto: CriarUsuarioDto,
+  ): Promise<Usuario> {
     const existente = await this.usuarioModel.findOne({ firebaseUid });
     if (existente) {
-      throw new ConflictException('Usuario ja cadastrado');
+      throw new ConflictException('Usuário já cadastrado');
     }
 
     const usuario = new this.usuarioModel({ firebaseUid, ...criarUsuarioDto });
@@ -32,7 +35,7 @@ export class UsuariosService {
   async buscarPorFirebaseUid(firebaseUid: string): Promise<Usuario> {
     const usuario = await this.usuarioModel.findOne({ firebaseUid }).exec();
     if (!usuario) {
-      throw new NotFoundException('Usuario nao encontrado');
+      throw new NotFoundException('Usuário não encontrado');
     }
     return usuario;
   }
@@ -40,7 +43,7 @@ export class UsuariosService {
   async buscarPorId(id: string): Promise<Usuario> {
     const usuario = await this.usuarioModel.findById(id).exec();
     if (!usuario) {
-      throw new NotFoundException('Usuario nao encontrado');
+      throw new NotFoundException('Usuário não encontrado');
     }
     return usuario;
   }
@@ -53,7 +56,7 @@ export class UsuariosService {
       .findOneAndUpdate({ firebaseUid }, atualizarUsuarioDto, { new: true })
       .exec();
     if (!usuario) {
-      throw new NotFoundException('Usuario nao encontrado');
+      throw new NotFoundException('Usuário não encontrado');
     }
     return usuario;
   }
@@ -63,7 +66,7 @@ export class UsuariosService {
       .findOneAndDelete({ firebaseUid })
       .exec();
     if (!usuario) {
-      throw new NotFoundException('Usuario nao encontrado');
+      throw new NotFoundException('Usuário não encontrado');
     }
     return usuario;
   }

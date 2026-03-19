@@ -21,15 +21,13 @@ async function bootstrap() {
       // Permitir localhost para desenvolvimento
       if (!origin || origin.startsWith('http://localhost')) {
         callback(null, true);
-      } 
+      }
       // URLs do Firebase Hosting (quando deployar)
       else if (origin === 'https://baderna-fc.web.app') {
         callback(null, true);
-      } 
-      else if (origin === 'https://baderna-fc.firebaseapp.com') {
+      } else if (origin === 'https://baderna-fc.firebaseapp.com') {
         callback(null, true);
-      } 
-      else {
+      } else {
         callback(new Error('Not allowed by CORS'));
       }
     },
@@ -37,6 +35,5 @@ async function bootstrap() {
   });
 
   await app.listen(3000);
-
 }
 bootstrap();

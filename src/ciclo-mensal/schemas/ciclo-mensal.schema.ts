@@ -11,15 +11,6 @@ export class CicloMensal {
   @Prop({ required: true })
   dataFinal: Date;
 
-  @Prop({ required: true, min: 0, max: 6 })
-  diaSemana: number;
-
-  @Prop({ required: true })
-  horario: string;
-
-  @Prop({ required: true })
-  valorMensal: number;
-
   @Prop({ required: true })
   quantidadePartidas: number;
 

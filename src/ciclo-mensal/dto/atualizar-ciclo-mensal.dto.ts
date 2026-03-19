@@ -1,17 +1,6 @@
-import {
-  IsNumber,
-  IsOptional,
-  IsArray,
-  IsMongoId,
-  Min,
-} from 'class-validator';
+import { IsOptional, IsArray, IsMongoId } from 'class-validator';
 
 export class AtualizarCicloMensalDto {
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  valorMensal?: number;
-
   @IsArray()
   @IsMongoId({ each: true })
   @IsOptional()

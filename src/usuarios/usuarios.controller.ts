@@ -17,7 +17,10 @@ export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
   @Post()
-  criar(@FirebaseAuth() usuarioAuth: any, @Body() criarUsuarioDto: CriarUsuarioDto) {
+  criar(
+    @FirebaseAuth() usuarioAuth: any,
+    @Body() criarUsuarioDto: CriarUsuarioDto,
+  ) {
     return this.usuariosService.criar(usuarioAuth.uid, criarUsuarioDto);
   }
 

@@ -8,18 +8,13 @@ import {
   Param,
 } from '@nestjs/common';
 import { PartidasService } from './partidas.service';
-import { CriarPartidaDto } from './dto/criar-partida.dto';
 import { ConfirmarPresencaDto } from './dto/confirmar-presenca.dto';
 import { AtualizarNotaDto } from './dto/atualizar-nota.dto';
+import { PagamentoDiaristaDto } from './dto/pagamento-diarista.dto';
 
 @Controller('partidas')
 export class PartidasController {
   constructor(private readonly partidasService: PartidasService) {}
-
-  @Post()
-  criar(@Body() criarPartidaDto: CriarPartidaDto) {
-    return this.partidasService.criar(criarPartidaDto);
-  }
 
   @Get()
   buscarTodos() {
@@ -75,6 +70,18 @@ export class PartidasController {
       id,
       atualizarNotaDto.jogadorId,
       atualizarNotaDto.nota,
+    );
+  }
+
+  @Put(':id/pagamento-diarista')
+  marcarPagamentoDiarista(
+    @Param('id') id: string,
+    @Body() pagamentoDiaristaDto: PagamentoDiaristaDto,
+  ) {
+    return this.partidasService.marcarPagamentoDiarista(
+      id,
+      pagamentoDiaristaDto.jogadorId,
+      pagamentoDiaristaDto.pago,
     );
   }
 

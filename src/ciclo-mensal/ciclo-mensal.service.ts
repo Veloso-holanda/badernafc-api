@@ -1,57 +1,90 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { CicloMensal, CicloMensalDocument } from './schemas/ciclo-mensal.schema';
+import { Model, Types } from 'mongoose';
+import {
+  CicloMensal,
+  CicloMensalDocument,
+} from './schemas/ciclo-mensal.schema';
 import { CriarCicloMensalDto } from './dto/criar-ciclo-mensal.dto';
 import { AtualizarCicloMensalDto } from './dto/atualizar-ciclo-mensal.dto';
+import { Partida, PartidaDocument } from '../partidas/schemas/partida.schema';
+import { ConfiguracoesGeraisService } from '../configuracoes-gerais/configuracoes-gerais.service';
 
 @Injectable()
 export class CicloMensalService {
   constructor(
     @InjectModel(CicloMensal.name)
     private cicloMensalModel: Model<CicloMensalDocument>,
+    @InjectModel(Partida.name)
+    private partidaModel: Model<PartidaDocument>,
+    private readonly configuracoesGeraisService: ConfiguracoesGeraisService,
   ) {}
 
-  private contarDiasSemanaNoPeriodo(
+  private calcularDatasPartidas(
     dataInicial: Date,
     dataFinal: Date,
     diaSemana: number,
-  ): number {
-    let contagem = 0;
+  ): Date[] {
+    const datas: Date[] = [];
     const atual = new Date(dataInicial);
 
     while (atual < dataFinal) {
       if (atual.getDay() === diaSemana) {
-        contagem++;
+        datas.push(new Date(atual));
       }
       atual.setDate(atual.getDate() + 1);
     }
 
-    return contagem;
+    return datas;
+  }
+
+  private calcularAberturaLista(dataPartida: Date): Date {
+    const abertura = new Date(dataPartida);
+    abertura.setDate(abertura.getDate() - 1);
+    abertura.setHours(0, 0, 0, 0);
+    return abertura;
+  }
+
+  private calcularFechamentoLista(dataPartida: Date, horario: string): Date {
+    const [horas, minutos] = horario.split(':').map(Number);
+    const fechamento = new Date(dataPartida);
+    fechamento.setHours(horas - 1, minutos, 0, 0);
+    return fechamento;
   }
 
   async criar(criarCicloMensalDto: CriarCicloMensalDto): Promise<CicloMensal> {
+    const config = await this.configuracoesGeraisService.buscar();
+
     const dataInicial = new Date(criarCicloMensalDto.dataInicial);
     const dataFinal = new Date(dataInicial);
     dataFinal.setMonth(dataFinal.getMonth() + 1);
 
-    const quantidadePartidas = this.contarDiasSemanaNoPeriodo(
+    const datasPartidas = this.calcularDatasPartidas(
       dataInicial,
       dataFinal,
-      criarCicloMensalDto.diaSemana,
+      config.diaFutebol,
     );
 
     const ciclo = new this.cicloMensalModel({
-      ...criarCicloMensalDto,
       dataInicial,
       dataFinal,
-      quantidadePartidas,
+      quantidadePartidas: datasPartidas.length,
+      mensalistas: criarCicloMensalDto.mensalistas ?? [],
     });
 
-    return ciclo.save();
+    const cicloSalvo = await ciclo.save();
+
+    const partidas = datasPartidas.map((data) => ({
+      cicloMensal: cicloSalvo['_id'],
+      data,
+      horario: config.horaFutebol,
+      aberturaLista: this.calcularAberturaLista(data),
+      fechamentoLista: this.calcularFechamentoLista(data, config.horaFutebol),
+    }));
+
+    await this.partidaModel.insertMany(partidas);
+
+    return cicloSalvo;
   }
 
   async buscarTodos(): Promise<CicloMensal[]> {
@@ -64,7 +97,7 @@ export class CicloMensalService {
       .populate('mensalistas')
       .exec();
     if (!ciclo) {
-      throw new NotFoundException('Ciclo mensal nao encontrado');
+      throw new NotFoundException('Ciclo mensal não encontrado');
     }
     return ciclo;
   }
@@ -93,7 +126,7 @@ export class CicloMensalService {
       .populate('mensalistas')
       .exec();
     if (!ciclo) {
-      throw new NotFoundException('Ciclo mensal nao encontrado');
+      throw new NotFoundException('Ciclo mensal não encontrado');
     }
     return ciclo;
   }
@@ -101,8 +134,11 @@ export class CicloMensalService {
   async remover(id: string): Promise<CicloMensal> {
     const ciclo = await this.cicloMensalModel.findByIdAndDelete(id).exec();
     if (!ciclo) {
-      throw new NotFoundException('Ciclo mensal nao encontrado');
+      throw new NotFoundException('Ciclo mensal não encontrado');
     }
+    await this.partidaModel
+      .deleteMany({ cicloMensal: new Types.ObjectId(id) })
+      .exec();
     return ciclo;
   }
 }
