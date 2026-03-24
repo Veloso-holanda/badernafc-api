@@ -12,10 +12,6 @@ export class CriarUsuarioDto {
   @IsNotEmpty()
   nome: string;
 
-  @IsString()
-  @IsOptional()
-  apelido?: string;
-
   @IsEmail()
   @IsNotEmpty()
   email: string;
@@ -31,4 +27,8 @@ export class CriarUsuarioDto {
   @IsEnum(UsuarioPerfil)
   @IsOptional()
   perfil?: UsuarioPerfil;
+
+  @IsString()
+  @IsOptional()
+  codigoVincular?: string;
 }

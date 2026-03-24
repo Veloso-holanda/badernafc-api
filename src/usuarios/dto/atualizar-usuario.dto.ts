@@ -8,10 +8,6 @@ export class AtualizarUsuarioDto {
 
   @IsString()
   @IsOptional()
-  apelido?: string;
-
-  @IsString()
-  @IsOptional()
   fotoUrl?: string;
 
   @IsString()

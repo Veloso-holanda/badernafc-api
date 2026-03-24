@@ -14,4 +14,8 @@ export class AtualizarJogadorDto {
   @Max(5)
   @IsOptional()
   nivel?: number;
+
+  @IsString()
+  @IsOptional()
+  avatarUrl?: string;
 }

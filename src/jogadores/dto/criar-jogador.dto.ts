@@ -21,4 +21,8 @@ export class CriarJogadorDto {
   @Max(5)
   @IsNotEmpty()
   nivel: number;
+
+  @IsString()
+  @IsOptional()
+  avatarUrl?: string;
 }

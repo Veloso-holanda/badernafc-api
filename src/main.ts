@@ -1,9 +1,13 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Interceptor global de logging
+  app.useGlobalInterceptors(new LoggingInterceptor());
 
   // Configurar ValidationPipe global
   app.useGlobalPipes(
@@ -34,6 +38,10 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.listen(3000);
+  const porta = process.env.PORT || 3000;
+  await app.listen(porta);
+
+  const logger = new Logger('Bootstrap');
+  logger.log(`Aplicação rodando na porta ${porta}`);
 }
 bootstrap();

@@ -28,6 +28,9 @@ export class Jogador {
 
   @Prop({ default: false })
   vinculado: boolean;
+
+  @Prop({ default: '' })
+  avatarUrl: string;
 }
 
 export const JogadorSchema = SchemaFactory.createForClass(Jogador);

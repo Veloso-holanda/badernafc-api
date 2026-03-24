@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Despesa, DespesaDocument } from './schemas/despesa.schema';
@@ -28,6 +28,8 @@ export interface ResumoFinanceiro {
 
 @Injectable()
 export class FinanceiroService {
+  private readonly logger = new Logger(FinanceiroService.name);
+
   constructor(
     @InjectModel(Despesa.name) private despesaModel: Model<DespesaDocument>,
     @InjectModel(CicloMensal.name)
@@ -37,10 +39,12 @@ export class FinanceiroService {
   ) {}
 
   async criarDespesa(criarDespesaDto: CriarDespesaDto): Promise<Despesa> {
+    this.logger.log(`Criando despesa | ciclo: ${criarDespesaDto.cicloMensalId} | descricao: ${criarDespesaDto.descricao} | valor: ${criarDespesaDto.valor}`);
     const ciclo = await this.cicloMensalModel
       .findById(criarDespesaDto.cicloMensalId)
       .exec();
     if (!ciclo) {
+      this.logger.warn(`Ciclo mensal nao encontrado para despesa | id: ${criarDespesaDto.cicloMensalId}`);
       throw new NotFoundException('Ciclo mensal não encontrado');
     }
 
@@ -51,10 +55,13 @@ export class FinanceiroService {
       ...(criarDespesaDto.data && { data: new Date(criarDespesaDto.data) }),
     });
 
-    return despesa.save();
+    const salvo = await despesa.save();
+    this.logger.log(`Despesa criada | id: ${salvo['_id']}`);
+    return salvo;
   }
 
   async buscarDespesasPorCiclo(cicloMensalId: string): Promise<Despesa[]> {
+    this.logger.debug(`Buscando despesas do ciclo: ${cicloMensalId}`);
     return this.despesaModel
       .find({ cicloMensal: new Types.ObjectId(cicloMensalId) })
       .exec();
@@ -64,28 +71,35 @@ export class FinanceiroService {
     id: string,
     atualizarDespesaDto: AtualizarDespesaDto,
   ): Promise<Despesa> {
+    this.logger.log(`Atualizando despesa | id: ${id} | campos: ${Object.keys(atualizarDespesaDto).join(', ')}`);
     const despesa = await this.despesaModel
       .findByIdAndUpdate(id, atualizarDespesaDto, { new: true })
       .exec();
     if (!despesa) {
+      this.logger.warn(`Despesa nao encontrada para atualizar | id: ${id}`);
       throw new NotFoundException('Despesa não encontrada');
     }
     return despesa;
   }
 
   async removerDespesa(id: string): Promise<Despesa> {
+    this.logger.log(`Removendo despesa | id: ${id}`);
     const despesa = await this.despesaModel.findByIdAndDelete(id).exec();
     if (!despesa) {
+      this.logger.warn(`Despesa nao encontrada para remover | id: ${id}`);
       throw new NotFoundException('Despesa não encontrada');
     }
+    this.logger.log(`Despesa removida | id: ${id} | descricao: ${despesa.descricao}`);
     return despesa;
   }
 
   async calcularResumoFinanceiro(
     cicloMensalId: string,
   ): Promise<ResumoFinanceiro> {
+    this.logger.log(`Calculando resumo financeiro | ciclo: ${cicloMensalId}`);
     const ciclo = await this.cicloMensalModel.findById(cicloMensalId).exec();
     if (!ciclo) {
+      this.logger.warn(`Ciclo mensal nao encontrado para resumo | id: ${cicloMensalId}`);
       throw new NotFoundException('Ciclo mensal não encontrado');
     }
 
@@ -116,6 +130,10 @@ export class FinanceiroService {
     const despesasManuais = despesas.reduce((soma, d) => soma + d.valor, 0);
     const despesasTotal = despesasManuais + config.valorCicloMensal;
     const saldo = receitaTotal - despesasTotal;
+
+    this.logger.log(
+      `Resumo financeiro calculado | ciclo: ${cicloMensalId} | receita: ${receitaTotal} | despesas: ${despesasTotal} | saldo: ${saldo}`,
+    );
 
     return {
       cicloMensalId,

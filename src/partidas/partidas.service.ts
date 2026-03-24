@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -15,6 +16,8 @@ import { JogadoresService } from '../jogadores/jogadores.service';
 
 @Injectable()
 export class PartidasService {
+  private readonly logger = new Logger(PartidasService.name);
+
   constructor(
     @InjectModel(Partida.name) private partidaModel: Model<PartidaDocument>,
     private readonly cicloMensalService: CicloMensalService,
@@ -22,6 +25,7 @@ export class PartidasService {
   ) {}
 
   async buscarTodos(): Promise<Partida[]> {
+    this.logger.log('Buscando todas as partidas');
     return this.partidaModel
       .find()
       .populate('cicloMensal')
@@ -31,6 +35,7 @@ export class PartidasService {
   }
 
   async buscarPorId(id: string): Promise<Partida> {
+    this.logger.debug(`Buscando partida por id: ${id}`);
     const partida = await this.partidaModel
       .findById(id)
       .populate('cicloMensal')
@@ -38,12 +43,14 @@ export class PartidasService {
       .populate('listaEspera')
       .exec();
     if (!partida) {
+      this.logger.warn(`Partida nao encontrada | id: ${id}`);
       throw new NotFoundException('Partida não encontrada');
     }
     return partida;
   }
 
   async buscarPorCiclo(cicloMensalId: string): Promise<Partida[]> {
+    this.logger.log(`Buscando partidas do ciclo: ${cicloMensalId}`);
     return this.partidaModel
       .find({ cicloMensal: new Types.ObjectId(cicloMensalId) })
       .populate('jogadores.jogador')
@@ -55,6 +62,7 @@ export class PartidasService {
     partidaId: string,
     jogadorId: string,
   ): Promise<Partida> {
+    this.logger.log(`Confirmando presenca | partida: ${partidaId} | jogador: ${jogadorId}`);
     const partida = await this.buscarPorId(partidaId);
     const agora = new Date();
 
@@ -116,6 +124,7 @@ export class PartidasService {
     const ehDiaPartida =
       agora.toDateString() === new Date(partida.data).toDateString();
     if (ehDiaPartida && agora.getHours() < 18 && !ehMensalista) {
+      this.logger.log(`Diarista enviado para lista de espera (antes das 18h) | jogador: ${jogadorId}`);
       await this.partidaModel.findByIdAndUpdate(partidaId, {
         $push: { listaEspera: new Types.ObjectId(jogadorId) },
       });
@@ -125,6 +134,7 @@ export class PartidasService {
     // Lista cheia: diarista vai pra espera, mensalista erro
     if (partida.jogadores.length >= partida.limiteJogadores) {
       if (!ehMensalista) {
+        this.logger.log(`Lista cheia, diarista enviado para espera | jogador: ${jogadorId}`);
         await this.partidaModel.findByIdAndUpdate(partidaId, {
           $push: { listaEspera: new Types.ObjectId(jogadorId) },
         });
@@ -144,6 +154,7 @@ export class PartidasService {
       },
     });
 
+    this.logger.log(`Presenca confirmada | partida: ${partidaId} | jogador: ${jogadorId} | mensalista: ${ehMensalista}`);
     return this.buscarPorId(partidaId);
   }
 
@@ -151,6 +162,7 @@ export class PartidasService {
     partidaId: string,
     jogadorId: string,
   ): Promise<Partida> {
+    this.logger.log(`Promovendo da lista de espera | partida: ${partidaId} | jogador: ${jogadorId}`);
     const partida = await this.buscarPorId(partidaId);
 
     if (partida.jogadores.length >= partida.limiteJogadores) {
@@ -182,6 +194,7 @@ export class PartidasService {
   }
 
   async removerJogador(partidaId: string, jogadorId: string): Promise<Partida> {
+    this.logger.log(`Removendo jogador da partida | partida: ${partidaId} | jogador: ${jogadorId}`);
     await this.partidaModel.findByIdAndUpdate(partidaId, {
       $pull: {
         jogadores: { jogador: new Types.ObjectId(jogadorId) },
@@ -196,6 +209,7 @@ export class PartidasService {
     jogadorId: string,
     nota: number,
   ): Promise<Partida> {
+    this.logger.log(`Atualizando nota | partida: ${partidaId} | jogador: ${jogadorId} | nota: ${nota}`);
     const resultado = await this.partidaModel.findOneAndUpdate(
       {
         _id: partidaId,
@@ -213,6 +227,7 @@ export class PartidasService {
   }
 
   async fecharLista(partidaId: string): Promise<Partida> {
+    this.logger.log(`Fechando lista | partida: ${partidaId}`);
     const partida = await this.partidaModel
       .findByIdAndUpdate(
         partidaId,
@@ -231,6 +246,7 @@ export class PartidasService {
     jogadorId: string,
     pago: boolean,
   ): Promise<Partida> {
+    this.logger.log(`Marcando pagamento diarista | partida: ${partidaId} | jogador: ${jogadorId} | pago: ${pago}`);
     const partida = await this.buscarPorId(partidaId);
 
     const jogadorNaPartida = partida.jogadores.find(
@@ -261,10 +277,13 @@ export class PartidasService {
   }
 
   async remover(id: string): Promise<Partida> {
+    this.logger.log(`Removendo partida | id: ${id}`);
     const partida = await this.partidaModel.findByIdAndDelete(id).exec();
     if (!partida) {
+      this.logger.warn(`Partida nao encontrada para remover | id: ${id}`);
       throw new NotFoundException('Partida não encontrada');
     }
+    this.logger.log(`Partida removida | id: ${id}`);
     return partida;
   }
 }

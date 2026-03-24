@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 export type UsuarioDocument = HydratedDocument<Usuario>;
 
@@ -16,9 +16,6 @@ export class Usuario {
   @Prop({ required: true })
   nome: string;
 
-  @Prop()
-  apelido: string;
-
   @Prop({ required: true, unique: true })
   email: string;
 
@@ -30,6 +27,9 @@ export class Usuario {
 
   @Prop({ type: String, enum: UsuarioPerfil, default: UsuarioPerfil.USUARIO })
   perfil: UsuarioPerfil;
+
+  @Prop({ type: Types.ObjectId, ref: 'Jogador', default: null })
+  jogador: Types.ObjectId;
 
   @Prop({ default: true })
   ativo: boolean;
