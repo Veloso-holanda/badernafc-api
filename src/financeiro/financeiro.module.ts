@@ -8,8 +8,7 @@ import {
   CicloMensalSchema,
 } from '../ciclo-mensal/schemas/ciclo-mensal.schema';
 import { Partida, PartidaSchema } from '../partidas/schemas/partida.schema';
-import { Usuario, UsuarioSchema } from '../usuarios/schemas/usuario.schema';
-import { ConfiguracoesGeraisModule } from '../configuracoes-gerais/configuracoes-gerais.module';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
@@ -17,9 +16,8 @@ import { ConfiguracoesGeraisModule } from '../configuracoes-gerais/configuracoes
       { name: Despesa.name, schema: DespesaSchema },
       { name: CicloMensal.name, schema: CicloMensalSchema },
       { name: Partida.name, schema: PartidaSchema },
-      { name: Usuario.name, schema: UsuarioSchema },
     ]),
-    ConfiguracoesGeraisModule,
+    CommonModule,
   ],
   controllers: [FinanceiroController],
   providers: [FinanceiroService],

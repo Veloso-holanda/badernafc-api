@@ -6,45 +6,76 @@ import {
   Delete,
   Body,
   Param,
+  UseGuards,
 } from '@nestjs/common';
 import { CicloMensalService } from './ciclo-mensal.service';
 import { CriarCicloMensalDto } from './dto/criar-ciclo-mensal.dto';
 import { AtualizarCicloMensalDto } from './dto/atualizar-ciclo-mensal.dto';
+import { PagamentoMensalistaDto } from './dto/pagamento-mensalista.dto';
+import { TimeMembroGuard } from '../common/guards/time-membro.guard';
+import { AdminTimeGuard } from '../common/guards/admin-time.guard';
 
-@Controller('ciclos-mensais')
+@Controller('times/:timeId/ciclos-mensais')
+@UseGuards(TimeMembroGuard)
 export class CicloMensalController {
   constructor(private readonly cicloMensalService: CicloMensalService) {}
 
   @Post()
-  criar(@Body() criarCicloMensalDto: CriarCicloMensalDto) {
-    return this.cicloMensalService.criar(criarCicloMensalDto);
+  @UseGuards(AdminTimeGuard)
+  criar(
+    @Param('timeId') timeId: string,
+    @Body() criarCicloMensalDto: CriarCicloMensalDto,
+  ) {
+    return this.cicloMensalService.criar(timeId, criarCicloMensalDto);
   }
 
   @Get()
-  buscarTodos() {
-    return this.cicloMensalService.buscarTodos();
+  buscarTodos(@Param('timeId') timeId: string) {
+    return this.cicloMensalService.buscarTodos(timeId);
   }
 
   @Get('atual')
-  buscarAtual() {
-    return this.cicloMensalService.buscarAtual();
+  buscarAtual(@Param('timeId') timeId: string) {
+    return this.cicloMensalService.buscarAtual(timeId);
   }
 
   @Get(':id')
-  buscarPorId(@Param('id') id: string) {
-    return this.cicloMensalService.buscarPorId(id);
+  buscarPorId(@Param('timeId') timeId: string, @Param('id') id: string) {
+    return this.cicloMensalService.buscarPorId(timeId, id);
   }
 
   @Put(':id')
+  @UseGuards(AdminTimeGuard)
   atualizar(
+    @Param('timeId') timeId: string,
     @Param('id') id: string,
     @Body() atualizarCicloMensalDto: AtualizarCicloMensalDto,
   ) {
-    return this.cicloMensalService.atualizar(id, atualizarCicloMensalDto);
+    return this.cicloMensalService.atualizar(
+      timeId,
+      id,
+      atualizarCicloMensalDto,
+    );
+  }
+
+  @Put(':id/pagamento-mensalista')
+  @UseGuards(AdminTimeGuard)
+  marcarPagamentoMensalista(
+    @Param('timeId') timeId: string,
+    @Param('id') id: string,
+    @Body() pagamentoDto: PagamentoMensalistaDto,
+  ) {
+    return this.cicloMensalService.marcarPagamentoMensalista(
+      timeId,
+      id,
+      pagamentoDto.jogadorId,
+      pagamentoDto.pago,
+    );
   }
 
   @Delete(':id')
-  remover(@Param('id') id: string) {
-    return this.cicloMensalService.remover(id);
+  @UseGuards(AdminTimeGuard)
+  remover(@Param('timeId') timeId: string, @Param('id') id: string) {
+    return this.cicloMensalService.remover(timeId, id);
   }
 }

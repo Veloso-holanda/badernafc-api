@@ -4,9 +4,9 @@ import { HydratedDocument, Types } from 'mongoose';
 export type PartidaDocument = HydratedDocument<Partida>;
 
 export enum PartidaStatus {
-  AGUARDANDO = 'aguardando',
+  AGENDADA = 'agendada',
   ABERTA = 'aberta',
-  FECHADA = 'fechada',
+  ABERTA_DIARISTAS = 'aberta_diaristas',
   SORTEADA = 'sorteada',
   FINALIZADA = 'finalizada',
 }
@@ -32,8 +32,28 @@ export class JogadorPartida {
 export const JogadorPartidaSchema =
   SchemaFactory.createForClass(JogadorPartida);
 
+@Schema({ _id: false })
+export class TimeSorteado {
+  @Prop({ required: true })
+  nome: string;
+
+  @Prop({ type: [{ type: Types.ObjectId, ref: 'Jogador' }], required: true })
+  jogadores: Types.ObjectId[];
+
+  @Prop({ type: Types.ObjectId, ref: 'Jogador', default: null })
+  goleiro: Types.ObjectId;
+
+  @Prop({ required: true })
+  somaEstrelas: number;
+}
+
+export const TimeSorteadoSchema = SchemaFactory.createForClass(TimeSorteado);
+
 @Schema({ timestamps: true })
 export class Partida {
+  @Prop({ type: Types.ObjectId, ref: 'Time', required: true, index: true })
+  time: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'CicloMensal', required: true })
   cicloMensal: Types.ObjectId;
 
@@ -46,7 +66,7 @@ export class Partida {
   @Prop({
     type: String,
     enum: PartidaStatus,
-    default: PartidaStatus.AGUARDANDO,
+    default: PartidaStatus.AGENDADA,
   })
   status: PartidaStatus;
 
@@ -54,7 +74,7 @@ export class Partida {
   aberturaLista: Date;
 
   @Prop({ required: true })
-  fechamentoLista: Date;
+  fechamentoMensalistas: Date;
 
   @Prop({ type: [JogadorPartidaSchema], default: [] })
   jogadores: JogadorPartida[];
@@ -64,6 +84,9 @@ export class Partida {
 
   @Prop({ required: true, default: 20 })
   limiteJogadores: number;
+
+  @Prop({ type: [TimeSorteadoSchema], default: [] })
+  timesSorteados: TimeSorteado[];
 }
 
 export const PartidaSchema = SchemaFactory.createForClass(Partida);

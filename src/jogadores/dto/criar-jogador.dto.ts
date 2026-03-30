@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -25,4 +26,8 @@ export class CriarJogadorDto {
   @IsString()
   @IsOptional()
   avatarUrl?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  goleiro?: boolean;
 }

@@ -9,19 +9,18 @@ import {
   CicloMensalDocument,
 } from '../ciclo-mensal/schemas/ciclo-mensal.schema';
 import { Partida, PartidaDocument } from '../partidas/schemas/partida.schema';
-import { ConfiguracoesGeraisService } from '../configuracoes-gerais/configuracoes-gerais.service';
 
 export interface ResumoFinanceiro {
   cicloMensalId: string;
   receitaMensalistas: number;
-  quantidadeMensalistas: number;
-  valorMensalista: number;
+  quantidadeMensalistasPagos: number;
+  quantidadeMensalistasTotal: number;
+  valorMensalidade: number;
   receitaDiaristas: number;
   quantidadeDiaristasPagos: number;
-  diaria: number;
+  valorDiaria: number;
   receitaTotal: number;
   despesasManuais: number;
-  valorCicloMensal: number;
   despesasTotal: number;
   saldo: number;
 }
@@ -35,20 +34,30 @@ export class FinanceiroService {
     @InjectModel(CicloMensal.name)
     private cicloMensalModel: Model<CicloMensalDocument>,
     @InjectModel(Partida.name) private partidaModel: Model<PartidaDocument>,
-    private readonly configuracoesGeraisService: ConfiguracoesGeraisService,
   ) {}
 
-  async criarDespesa(criarDespesaDto: CriarDespesaDto): Promise<Despesa> {
-    this.logger.log(`Criando despesa | ciclo: ${criarDespesaDto.cicloMensalId} | descricao: ${criarDespesaDto.descricao} | valor: ${criarDespesaDto.valor}`);
+  async criarDespesa(
+    timeId: string,
+    criarDespesaDto: CriarDespesaDto,
+  ): Promise<Despesa> {
+    this.logger.log(
+      `Criando despesa | time: ${timeId} | ciclo: ${criarDespesaDto.cicloMensalId}`,
+    );
     const ciclo = await this.cicloMensalModel
-      .findById(criarDespesaDto.cicloMensalId)
+      .findOne({
+        _id: criarDespesaDto.cicloMensalId,
+        time: new Types.ObjectId(timeId),
+      })
       .exec();
     if (!ciclo) {
-      this.logger.warn(`Ciclo mensal nao encontrado para despesa | id: ${criarDespesaDto.cicloMensalId}`);
+      this.logger.warn(
+        `Ciclo mensal nao encontrado para despesa | id: ${criarDespesaDto.cicloMensalId}`,
+      );
       throw new NotFoundException('Ciclo mensal não encontrado');
     }
 
     const despesa = new this.despesaModel({
+      time: new Types.ObjectId(timeId),
       cicloMensal: new Types.ObjectId(criarDespesaDto.cicloMensalId),
       descricao: criarDespesaDto.descricao,
       valor: criarDespesaDto.valor,
@@ -60,20 +69,33 @@ export class FinanceiroService {
     return salvo;
   }
 
-  async buscarDespesasPorCiclo(cicloMensalId: string): Promise<Despesa[]> {
-    this.logger.debug(`Buscando despesas do ciclo: ${cicloMensalId}`);
+  async buscarDespesasPorCiclo(
+    timeId: string,
+    cicloMensalId: string,
+  ): Promise<Despesa[]> {
+    this.logger.debug(
+      `Buscando despesas do ciclo: ${cicloMensalId} | time: ${timeId}`,
+    );
     return this.despesaModel
-      .find({ cicloMensal: new Types.ObjectId(cicloMensalId) })
+      .find({
+        time: new Types.ObjectId(timeId),
+        cicloMensal: new Types.ObjectId(cicloMensalId),
+      })
       .exec();
   }
 
   async atualizarDespesa(
+    timeId: string,
     id: string,
     atualizarDespesaDto: AtualizarDespesaDto,
   ): Promise<Despesa> {
-    this.logger.log(`Atualizando despesa | id: ${id} | campos: ${Object.keys(atualizarDespesaDto).join(', ')}`);
+    this.logger.log(`Atualizando despesa | id: ${id} | time: ${timeId}`);
     const despesa = await this.despesaModel
-      .findByIdAndUpdate(id, atualizarDespesaDto, { new: true })
+      .findOneAndUpdate(
+        { _id: id, time: new Types.ObjectId(timeId) },
+        atualizarDespesaDto,
+        { new: true },
+      )
       .exec();
     if (!despesa) {
       this.logger.warn(`Despesa nao encontrada para atualizar | id: ${id}`);
@@ -82,39 +104,59 @@ export class FinanceiroService {
     return despesa;
   }
 
-  async removerDespesa(id: string): Promise<Despesa> {
-    this.logger.log(`Removendo despesa | id: ${id}`);
-    const despesa = await this.despesaModel.findByIdAndDelete(id).exec();
+  async removerDespesa(timeId: string, id: string): Promise<Despesa> {
+    this.logger.log(`Removendo despesa | id: ${id} | time: ${timeId}`);
+    const despesa = await this.despesaModel
+      .findOneAndDelete({ _id: id, time: new Types.ObjectId(timeId) })
+      .exec();
     if (!despesa) {
       this.logger.warn(`Despesa nao encontrada para remover | id: ${id}`);
       throw new NotFoundException('Despesa não encontrada');
     }
-    this.logger.log(`Despesa removida | id: ${id} | descricao: ${despesa.descricao}`);
+    this.logger.log(`Despesa removida | id: ${id}`);
     return despesa;
   }
 
   async calcularResumoFinanceiro(
+    timeId: string,
     cicloMensalId: string,
   ): Promise<ResumoFinanceiro> {
-    this.logger.log(`Calculando resumo financeiro | ciclo: ${cicloMensalId}`);
-    const ciclo = await this.cicloMensalModel.findById(cicloMensalId).exec();
+    this.logger.log(
+      `Calculando resumo financeiro | ciclo: ${cicloMensalId} | time: ${timeId}`,
+    );
+    const ciclo = await this.cicloMensalModel
+      .findOne({
+        _id: cicloMensalId,
+        time: new Types.ObjectId(timeId),
+      })
+      .exec();
     if (!ciclo) {
-      this.logger.warn(`Ciclo mensal nao encontrado para resumo | id: ${cicloMensalId}`);
+      this.logger.warn(
+        `Ciclo mensal nao encontrado para resumo | id: ${cicloMensalId}`,
+      );
       throw new NotFoundException('Ciclo mensal não encontrado');
     }
 
-    const config = await this.configuracoesGeraisService.buscar();
-
     const partidas = await this.partidaModel
-      .find({ cicloMensal: new Types.ObjectId(cicloMensalId) })
+      .find({
+        time: new Types.ObjectId(timeId),
+        cicloMensal: new Types.ObjectId(cicloMensalId),
+      })
       .exec();
 
     const despesas = await this.despesaModel
-      .find({ cicloMensal: new Types.ObjectId(cicloMensalId) })
+      .find({
+        time: new Types.ObjectId(timeId),
+        cicloMensal: new Types.ObjectId(cicloMensalId),
+      })
       .exec();
 
-    const quantidadeMensalistas = ciclo.mensalistas.length;
-    const receitaMensalistas = quantidadeMensalistas * config.valorMensalista;
+    const quantidadeMensalistasTotal = ciclo.mensalistas.length;
+    const quantidadeMensalistasPagos = ciclo.mensalistas.filter(
+      (m) => m.pago,
+    ).length;
+    const receitaMensalistas =
+      quantidadeMensalistasPagos * ciclo.valorMensalidade;
 
     let quantidadeDiaristasPagos = 0;
     for (const partida of partidas) {
@@ -125,10 +167,10 @@ export class FinanceiroService {
       }
     }
 
-    const receitaDiaristas = quantidadeDiaristasPagos * config.diaria;
+    const receitaDiaristas = quantidadeDiaristasPagos * ciclo.valorDiaria;
     const receitaTotal = receitaMensalistas + receitaDiaristas;
     const despesasManuais = despesas.reduce((soma, d) => soma + d.valor, 0);
-    const despesasTotal = despesasManuais + config.valorCicloMensal;
+    const despesasTotal = despesasManuais;
     const saldo = receitaTotal - despesasTotal;
 
     this.logger.log(
@@ -138,14 +180,14 @@ export class FinanceiroService {
     return {
       cicloMensalId,
       receitaMensalistas,
-      quantidadeMensalistas,
-      valorMensalista: config.valorMensalista,
+      quantidadeMensalistasPagos,
+      quantidadeMensalistasTotal,
+      valorMensalidade: ciclo.valorMensalidade,
       receitaDiaristas,
       quantidadeDiaristasPagos,
-      diaria: config.diaria,
+      valorDiaria: ciclo.valorDiaria,
       receitaTotal,
       despesasManuais,
-      valorCicloMensal: config.valorCicloMensal,
       despesasTotal,
       saldo,
     };

@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   ConfiguracoesGerais,
   ConfiguracoesGeraisDocument,
@@ -23,54 +23,71 @@ export class ConfiguracoesGeraisService {
   ) {}
 
   async criar(
+    timeId: string,
     criarConfiguracoesGeraisDto: CriarConfiguracoesGeraisDto,
   ): Promise<ConfiguracoesGerais> {
-    this.logger.log(`Criando configuracoes gerais | ${JSON.stringify(criarConfiguracoesGeraisDto)}`);
+    this.logger.log(`Criando configuracoes gerais | time: ${timeId}`);
     const existente = await this.configuracoesGeraisModel
-      .countDocuments()
+      .countDocuments({ time: new Types.ObjectId(timeId) })
       .exec();
     if (existente > 0) {
-      this.logger.warn('Configuracoes gerais ja existem, bloqueando criacao');
+      this.logger.warn(
+        `Configuracoes gerais ja existem para o time: ${timeId}`,
+      );
       throw new BadRequestException(
-        'Configurações gerais já existem. Use a rota de atualização.',
+        'Configurações gerais já existem para este time. Use a rota de atualização.',
       );
     }
 
-    const configuracoes = new this.configuracoesGeraisModel(
-      criarConfiguracoesGeraisDto,
-    );
+    const configuracoes = new this.configuracoesGeraisModel({
+      time: new Types.ObjectId(timeId),
+      ...criarConfiguracoesGeraisDto,
+    });
     const salvo = await configuracoes.save();
-    this.logger.log(`Configuracoes gerais criadas | id: ${salvo['_id']}`);
+    this.logger.log(
+      `Configuracoes gerais criadas | id: ${salvo['_id']} | time: ${timeId}`,
+    );
     return salvo;
   }
 
-  async buscar(): Promise<ConfiguracoesGerais> {
-    this.logger.debug('Buscando configuracoes gerais');
-    const configuracoes = await this.configuracoesGeraisModel.findOne().exec();
+  async buscar(timeId: string): Promise<ConfiguracoesGerais> {
+    this.logger.debug(`Buscando configuracoes gerais | time: ${timeId}`);
+    const configuracoes = await this.configuracoesGeraisModel
+      .findOne({ time: new Types.ObjectId(timeId) })
+      .exec();
     if (!configuracoes) {
-      this.logger.warn('Configuracoes gerais nao encontradas');
-      throw new NotFoundException('Configurações gerais não encontradas');
+      this.logger.warn(
+        `Configuracoes gerais nao encontradas | time: ${timeId}`,
+      );
+      throw new NotFoundException(
+        'Configurações gerais não encontradas para este time',
+      );
     }
     return configuracoes;
   }
 
   async atualizar(
+    timeId: string,
     atualizarConfiguracoesGeraisDto: AtualizarConfiguracoesGeraisDto,
   ): Promise<ConfiguracoesGerais> {
-    this.logger.log(`Atualizando configuracoes gerais | campos: ${Object.keys(atualizarConfiguracoesGeraisDto).join(', ')}`);
-    const configuracoes = await this.configuracoesGeraisModel.findOne().exec();
+    this.logger.log(`Atualizando configuracoes gerais | time: ${timeId}`);
+    const configuracoes = await this.configuracoesGeraisModel
+      .findOneAndUpdate(
+        { time: new Types.ObjectId(timeId) },
+        atualizarConfiguracoesGeraisDto,
+        { new: true },
+      )
+      .exec();
     if (!configuracoes) {
-      this.logger.warn('Configuracoes gerais nao encontradas para atualizar');
-      throw new NotFoundException('Configurações gerais não encontradas');
+      this.logger.warn(
+        `Configuracoes gerais nao encontradas para atualizar | time: ${timeId}`,
+      );
+      throw new NotFoundException(
+        'Configurações gerais não encontradas para este time',
+      );
     }
 
-    const atualizado = await this.configuracoesGeraisModel
-      .findByIdAndUpdate(configuracoes._id, atualizarConfiguracoesGeraisDto, {
-        new: true,
-      })
-      .exec();
-
-    this.logger.log(`Configuracoes gerais atualizadas | ${JSON.stringify(atualizado)}`);
-    return atualizado!;
+    this.logger.log(`Configuracoes gerais atualizadas | time: ${timeId}`);
+    return configuracoes;
   }
 }

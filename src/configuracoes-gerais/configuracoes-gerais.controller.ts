@@ -1,31 +1,28 @@
-import { Controller, Get, Post, Put, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Body, Param, UseGuards } from '@nestjs/common';
 import { ConfiguracoesGeraisService } from './configuracoes-gerais.service';
-import { CriarConfiguracoesGeraisDto } from './dto/criar-configuracoes-gerais.dto';
 import { AtualizarConfiguracoesGeraisDto } from './dto/atualizar-configuracoes-gerais.dto';
-import { AdminGuard } from '../firebase/guards/admin.guard';
+import { TimeMembroGuard } from '../common/guards/time-membro.guard';
+import { AdminTimeGuard } from '../common/guards/admin-time.guard';
 
-@Controller('configuracoes-gerais')
-@UseGuards(AdminGuard)
+@Controller('times/:timeId/configuracoes-gerais')
+@UseGuards(TimeMembroGuard, AdminTimeGuard)
 export class ConfiguracoesGeraisController {
   constructor(
     private readonly configuracoesGeraisService: ConfiguracoesGeraisService,
   ) {}
 
-  @Post()
-  criar(@Body() criarConfiguracoesGeraisDto: CriarConfiguracoesGeraisDto) {
-    return this.configuracoesGeraisService.criar(criarConfiguracoesGeraisDto);
-  }
-
   @Get()
-  buscar() {
-    return this.configuracoesGeraisService.buscar();
+  buscar(@Param('timeId') timeId: string) {
+    return this.configuracoesGeraisService.buscar(timeId);
   }
 
   @Put()
   atualizar(
+    @Param('timeId') timeId: string,
     @Body() atualizarConfiguracoesGeraisDto: AtualizarConfiguracoesGeraisDto,
   ) {
     return this.configuracoesGeraisService.atualizar(
+      timeId,
       atualizarConfiguracoesGeraisDto,
     );
   }

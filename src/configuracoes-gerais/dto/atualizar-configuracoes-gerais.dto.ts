@@ -35,4 +35,24 @@ export class AtualizarConfiguracoesGeraisDto {
   })
   @IsOptional()
   horaFutebol?: string;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  jogadoresPorTime?: number;
+
+  @IsNumber()
+  @Min(2)
+  @IsOptional()
+  quantidadeTimes?: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  antecedenciaAberturaLista?: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  tempoLimiteMensalistas?: number;
 }

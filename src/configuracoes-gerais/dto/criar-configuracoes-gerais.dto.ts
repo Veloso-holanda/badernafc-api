@@ -35,4 +35,24 @@ export class CriarConfiguracoesGeraisDto {
   })
   @IsNotEmpty()
   horaFutebol: string;
+
+  @IsNumber()
+  @Min(1)
+  @IsNotEmpty()
+  jogadoresPorTime: number;
+
+  @IsNumber()
+  @Min(2)
+  @IsNotEmpty()
+  quantidadeTimes: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsNotEmpty()
+  antecedenciaAberturaLista: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsNotEmpty()
+  tempoLimiteMensalistas: number;
 }

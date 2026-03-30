@@ -19,9 +19,15 @@ export class LoggingInterceptor implements NestInterceptor {
 
     this.logger.log(
       `→ ${method} ${url} | usuario: ${usuario}` +
-        (Object.keys(params).length ? ` | params: ${JSON.stringify(params)}` : '') +
-        (Object.keys(query).length ? ` | query: ${JSON.stringify(query)}` : '') +
-        (body && Object.keys(body).length ? ` | body: ${JSON.stringify(body)}` : ''),
+        (Object.keys(params).length
+          ? ` | params: ${JSON.stringify(params)}`
+          : '') +
+        (Object.keys(query).length
+          ? ` | query: ${JSON.stringify(query)}`
+          : '') +
+        (body && Object.keys(body).length
+          ? ` | body: ${JSON.stringify(body)}`
+          : ''),
     );
 
     return next.handle().pipe(

@@ -5,12 +5,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Jogador, JogadorDocument } from './schemas/jogador.schema';
 import { CriarJogadorDto } from './dto/criar-jogador.dto';
 import { AtualizarJogadorDto } from './dto/atualizar-jogador.dto';
 import { UsuariosService } from '../usuarios/usuarios.service';
-import { Usuario, UsuarioDocument } from '../usuarios/schemas/usuario.schema';
+import { Membro, MembroDocument } from '../times/schemas/membro.schema';
 import { randomBytes } from 'crypto';
 
 @Injectable()
@@ -19,7 +19,7 @@ export class JogadoresService {
 
   constructor(
     @InjectModel(Jogador.name) private jogadorModel: Model<JogadorDocument>,
-    @InjectModel(Usuario.name) private usuarioModel: Model<UsuarioDocument>,
+    @InjectModel(Membro.name) private membroModel: Model<MembroDocument>,
     private readonly usuariosService: UsuariosService,
   ) {}
 
@@ -27,27 +27,38 @@ export class JogadoresService {
     return randomBytes(4).toString('hex').toUpperCase();
   }
 
-  async criar(criarJogadorDto: CriarJogadorDto): Promise<Jogador> {
-    this.logger.log(`Criando jogador | nome: ${criarJogadorDto.nome}`);
+  async criar(
+    timeId: string,
+    criarJogadorDto: CriarJogadorDto,
+  ): Promise<Jogador> {
+    this.logger.log(
+      `Criando jogador | nome: ${criarJogadorDto.nome} | time: ${timeId}`,
+    );
     const codigoVincular = this.gerarCodigoVincular();
     const jogador = new this.jogadorModel({
       ...criarJogadorDto,
+      time: new Types.ObjectId(timeId),
       codigoVincular,
     });
     const salvo = await jogador.save();
-    this.logger.log(`Jogador criado | id: ${salvo['_id']} | codigo: ${codigoVincular}`);
+    this.logger.log(
+      `Jogador criado | id: ${salvo['_id']} | codigo: ${codigoVincular}`,
+    );
     return salvo;
   }
 
-  async buscarTodos(): Promise<Jogador[]> {
-    this.logger.log('Buscando todos os jogadores');
-    return this.jogadorModel.find().populate('usuario').exec();
+  async buscarTodos(timeId: string): Promise<Jogador[]> {
+    this.logger.log(`Buscando jogadores do time: ${timeId}`);
+    return this.jogadorModel
+      .find({ time: new Types.ObjectId(timeId) })
+      .populate('usuario')
+      .exec();
   }
 
-  async buscarPorId(id: string): Promise<Jogador> {
-    this.logger.debug(`Buscando jogador por id: ${id}`);
+  async buscarPorId(timeId: string, id: string): Promise<Jogador> {
+    this.logger.debug(`Buscando jogador por id: ${id} | time: ${timeId}`);
     const jogador = await this.jogadorModel
-      .findById(id)
+      .findOne({ _id: id, time: new Types.ObjectId(timeId) })
       .populate('usuario')
       .exec();
     if (!jogador) {
@@ -58,12 +69,17 @@ export class JogadoresService {
   }
 
   async atualizar(
+    timeId: string,
     id: string,
     atualizarJogadorDto: AtualizarJogadorDto,
   ): Promise<Jogador> {
-    this.logger.log(`Atualizando jogador | id: ${id} | campos: ${Object.keys(atualizarJogadorDto).join(', ')}`);
+    this.logger.log(`Atualizando jogador | id: ${id} | time: ${timeId}`);
     const jogador = await this.jogadorModel
-      .findByIdAndUpdate(id, atualizarJogadorDto, { new: true })
+      .findOneAndUpdate(
+        { _id: id, time: new Types.ObjectId(timeId) },
+        atualizarJogadorDto,
+        { new: true },
+      )
       .populate('usuario')
       .exec();
     if (!jogador) {
@@ -73,9 +89,11 @@ export class JogadoresService {
     return jogador;
   }
 
-  async remover(id: string): Promise<Jogador> {
-    this.logger.log(`Removendo jogador | id: ${id}`);
-    const jogador = await this.jogadorModel.findByIdAndDelete(id).exec();
+  async remover(timeId: string, id: string): Promise<Jogador> {
+    this.logger.log(`Removendo jogador | id: ${id} | time: ${timeId}`);
+    const jogador = await this.jogadorModel
+      .findOneAndDelete({ _id: id, time: new Types.ObjectId(timeId) })
+      .exec();
     if (!jogador) {
       this.logger.warn(`Jogador nao encontrado para remover | id: ${id}`);
       throw new NotFoundException('Jogador não encontrado');
@@ -85,11 +103,20 @@ export class JogadoresService {
   }
 
   async vincular(
+    timeId: string,
     firebaseUid: string,
     codigoVincular: string,
   ): Promise<Jogador> {
-    this.logger.log(`Vinculando jogador | codigo: ${codigoVincular} | firebaseUid: ${firebaseUid}`);
-    const jogador = await this.jogadorModel.findOne({ codigoVincular }).exec();
+    this.logger.log(
+      `Vinculando jogador | codigo: ${codigoVincular} | time: ${timeId} | firebaseUid: ${firebaseUid}`,
+    );
+    const jogador = await this.jogadorModel
+      .findOne({
+        time: new Types.ObjectId(timeId),
+        codigoVincular,
+      })
+      .exec();
+
     if (!jogador) {
       this.logger.warn(`Codigo de vinculo invalido: ${codigoVincular}`);
       throw new NotFoundException('Código de vínculo inválido');
@@ -107,13 +134,20 @@ export class JogadoresService {
     jogador.email = usuario.email;
     jogador.telefone = usuario['telefone'] || '';
     jogador.vinculado = true;
-
     const salvo = await jogador.save();
 
-    await this.usuarioModel.findByIdAndUpdate(usuario['_id'], {
-      jogador: salvo['_id'],
-    });
-    this.logger.log(`Jogador vinculado com sucesso | id: ${salvo['_id']} | usuario: ${usuario['_id']}`);
+    await this.membroModel.findOneAndUpdate(
+      {
+        time: new Types.ObjectId(timeId),
+        usuario: usuario['_id'],
+        ativo: true,
+      },
+      { jogador: salvo['_id'] },
+    );
+
+    this.logger.log(
+      `Jogador vinculado com sucesso | id: ${salvo['_id']} | usuario: ${usuario['_id']}`,
+    );
     return salvo;
   }
 }

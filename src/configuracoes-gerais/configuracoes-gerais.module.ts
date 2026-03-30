@@ -6,14 +6,14 @@ import {
   ConfiguracoesGerais,
   ConfiguracoesGeraisSchema,
 } from './schemas/configuracoes-gerais.schema';
-import { Usuario, UsuarioSchema } from '../usuarios/schemas/usuario.schema';
+import { CommonModule } from '../common/common.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: ConfiguracoesGerais.name, schema: ConfiguracoesGeraisSchema },
-      { name: Usuario.name, schema: UsuarioSchema },
     ]),
+    CommonModule,
   ],
   controllers: [ConfiguracoesGeraisController],
   providers: [ConfiguracoesGeraisService],

@@ -19,11 +19,15 @@ export class FirebaseAuthMiddleware implements NestMiddleware {
       .verifyIdToken(token.replace('Bearer ', ''))
       .then((decodedToken: any) => {
         req['user'] = decodedToken;
-        this.logger.debug(`Autenticado: ${decodedToken.uid} | ${req.method} ${req.url}`);
+        this.logger.debug(
+          `Autenticado: ${decodedToken.uid} | ${req.method} ${req.url}`,
+        );
         next();
       })
       .catch((e) => {
-        this.logger.error(`Token inválido | ${req.method} ${req.url} | ${e.message}`);
+        this.logger.error(
+          `Token inválido | ${req.method} ${req.url} | ${e.message}`,
+        );
         return res.status(403).json({ message: 'Token inválido' });
       });
   }

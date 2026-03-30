@@ -1,11 +1,4 @@
-import {
-  IsEmail,
-  IsEnum,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-} from 'class-validator';
-import { UsuarioPerfil } from '../schemas/usuario.schema';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CriarUsuarioDto {
   @IsString()
@@ -23,12 +16,4 @@ export class CriarUsuarioDto {
   @IsString()
   @IsOptional()
   telefone?: string;
-
-  @IsEnum(UsuarioPerfil)
-  @IsOptional()
-  perfil?: UsuarioPerfil;
-
-  @IsString()
-  @IsOptional()
-  codigoVincular?: string;
 }

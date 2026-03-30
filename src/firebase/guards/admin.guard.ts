@@ -13,7 +13,7 @@ import {
 } from '../../usuarios/schemas/usuario.schema';
 
 @Injectable()
-export class AdminGuard implements CanActivate {
+export class SuperAdminGuard implements CanActivate {
   constructor(
     @InjectModel(Usuario.name) private usuarioModel: Model<UsuarioDocument>,
   ) {}
@@ -23,13 +23,17 @@ export class AdminGuard implements CanActivate {
     const firebaseUid = request.user?.uid;
 
     if (!firebaseUid) {
-      throw new ForbiddenException('Acesso restrito a administradores');
+      throw new ForbiddenException(
+        'Acesso restrito a administradores da plataforma',
+      );
     }
 
     const usuario = await this.usuarioModel.findOne({ firebaseUid }).exec();
 
     if (!usuario || usuario.perfil !== UsuarioPerfil.ADMIN) {
-      throw new ForbiddenException('Acesso restrito a administradores');
+      throw new ForbiddenException(
+        'Acesso restrito a administradores da plataforma',
+      );
     }
 
     return true;

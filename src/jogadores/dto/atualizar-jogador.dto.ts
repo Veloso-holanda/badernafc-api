@@ -1,4 +1,11 @@
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class AtualizarJogadorDto {
   @IsString()
@@ -18,4 +25,8 @@ export class AtualizarJogadorDto {
   @IsString()
   @IsOptional()
   avatarUrl?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  goleiro?: boolean;
 }

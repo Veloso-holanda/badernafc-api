@@ -5,6 +5,9 @@ export type DespesaDocument = HydratedDocument<Despesa>;
 
 @Schema({ timestamps: true })
 export class Despesa {
+  @Prop({ type: Types.ObjectId, ref: 'Time', required: true, index: true })
+  time: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: 'CicloMensal', required: true })
   cicloMensal: Types.ObjectId;
 
